@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - Dockerfile.privoxy
+      - .github/workflows/privoxy.yml
   workflow_dispatch:
 
 jobs:
@@ -15,6 +16,11 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v4
+
+      - name: Normalize image owner
+        run: |
+          image_owner=$(printf '%s' "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
+          echo "IMAGE_OWNER=$image_owner" >> "$GITHUB_ENV"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -36,4 +42,4 @@ jobs:
           file: Dockerfile.privoxy
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/privoxy-warp:latest
+          tags: ghcr.io/${{ env.IMAGE_OWNER }}/privoxy-warp:latest
