@@ -9,6 +9,24 @@ The implementation is intentionally separated from real deployment state. The
 repository contains only reusable templates, Compose overlays, and sanitized
 configuration examples.
 
+## Distribution Model
+
+This repository is a deployment overlay distribution. The default runtime model
+is:
+
+```text
+upstream grok2api image
+  + Compose overlays
+  + admin static override
+  + Mihomo dashboard assets
+  + private access template
+  + sanitized runtime examples
+```
+
+The optional application image workflow exists for maintainers who want to build
+the full source tree from this repository. It is not required for the standard
+overlay-based deployment path.
+
 ## Scope
 
 This variant focuses on four operational concerns:
@@ -33,6 +51,7 @@ This variant focuses on four operational concerns:
 | Private access template | `nginx-private.example.conf` | Demonstrates allowlisted access to `/`, `/mihomo/`, and `/mihomo-api/`. |
 | Egress notes | `docs/egress.md` | Documents routing modes and operational constraints. |
 | Sanitization checklist | `docs/open-source-sanitization.md` | Lists files, patterns, and credentials that must not be published. |
+| Architecture notes | `docs/architecture.md` | Defines the overlay distribution model and runtime boundaries. |
 
 ## Network Topology
 

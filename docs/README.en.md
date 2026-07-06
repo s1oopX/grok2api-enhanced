@@ -1,9 +1,9 @@
 # grok2api-enhanced
 
-An operations-focused deployment variant for self-hosted grok2api.
+An operations-focused deployment overlay distribution for self-hosted grok2api.
 
-This repository keeps the upstream API gateway behavior and adds a cleaner
-deployment surface around it: configurable egress, a Mihomo dashboard,
+This repository does not replace the upstream API gateway. It packages a cleaner
+deployment layer around it: configurable egress, a Mihomo dashboard,
 private-access examples, and publication-safe sample configuration.
 
 > For research, learning, and self-hosted deployment evaluation only. Follow the
@@ -11,8 +11,9 @@ private-access examples, and publication-safe sample configuration.
 
 ## Focus
 
-This variant is about deployment control rather than rewriting the upstream
-application story.
+This distribution is about deployment control rather than rewriting the upstream
+application story. The standard path uses the upstream grok2api image plus
+Compose overlays and runtime templates.
 
 It focuses on:
 
@@ -29,7 +30,7 @@ It focuses on:
 | --- | --- |
 | Admin config | Fixed egress choices for `http://privoxy:8118` and `http://mihomo:7890` |
 | Mihomo dashboard | `/mihomo/` for current node, node switching, and latency checks |
-| Compose overlay | `docker-compose.mihomo.yml` for layering Mihomo onto the base stack |
+| Compose overlay | Compose files for layering ingress, private access, and egress services around the base stack |
 | Private access | `nginx-private.example.conf` as a generic allowlist gate example |
 | Example config | `mihomo/config.example.yaml` with placeholders only |
 | Publishing checklist | `docs/open-source-sanitization.md` for release hygiene |
@@ -38,15 +39,17 @@ It focuses on:
 
 ```text
 client
-  -> optional private access gate
-  -> grok2api
-     -> optional companion network helpers
-     -> selected egress
+  -> optional tunnel or reverse proxy
+  -> access-gate
+     -> grok2api
+     -> /mihomo/
+     -> /mihomo-api/ -> mihomo:9090
 
-egress choices
-  direct
-  http://privoxy:8118
-  http://mihomo:7890
+grok2api
+  -> selected internal proxy endpoint
+     -> direct
+     -> http://privoxy:8118
+     -> http://mihomo:7890
 ```
 
 For account-bound traffic, use one stable egress path in production. Random or
@@ -60,23 +63,27 @@ Create local runtime files from examples:
 cp .env.example .env
 cp mihomo/config.example.yaml mihomo/config.yaml
 cp nginx-private.example.conf nginx-private.conf
+# If the tunnel overlay is enabled, place your local tunnel token at ./cloudflared.token.
 ```
 
-Start the enhanced stack:
+Start the full enhanced profile:
 
 ```bash
 docker compose \
   -f docker-compose.warp.yml \
+  -f docker-compose.tunnel.yml \
   -f docker-compose.private.yml \
   -f docker-compose.mihomo.yml \
   up -d
 ```
 
-Or layer only the Mihomo service onto the base stack:
+Start the private Mihomo profile without WARP/Privoxy:
 
 ```bash
 docker compose \
   -f docker-compose.yml \
+  -f docker-compose.tunnel.yml \
+  -f docker-compose.private.yml \
   -f docker-compose.mihomo.yml \
   up -d
 ```
@@ -110,6 +117,7 @@ Place the admin surface and dashboard behind private access controls.
 ## Documents
 
 - [Egress Strategy](egress.md)
+- [Architecture](architecture.md)
 - [Private Access](private-access.md)
 - [Open Source Sanitization](open-source-sanitization.md)
 - [Enhanced Variant Notes](../README.enhanced.md)

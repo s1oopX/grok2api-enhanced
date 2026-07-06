@@ -1,4 +1,4 @@
-name: Build Docker Image
+name: Build Optional Application Image
 
 on:
   push:
@@ -6,9 +6,24 @@ on:
       - main
     tags:
       - 'v*'
+    paths:
+      - Dockerfile
+      - app/**
+      - scripts/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/docker.yml
   pull_request:
     branches:
       - main
+    paths:
+      - Dockerfile
+      - app/**
+      - scripts/**
+      - pyproject.toml
+      - uv.lock
+      - .github/workflows/docker.yml
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
