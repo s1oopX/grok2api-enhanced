@@ -8,11 +8,11 @@ The focus is operational maintainability for self-hosted deployments:
 - visual egress switching between WARP/Privoxy and Mihomo
 - a lightweight Mihomo node dashboard under `/mihomo/`
 - a private access-gate example for admin surfaces
-- conservative defaults for clearance refresh and account quota sync
+- conservative defaults for account refresh and quota sync workflows
 - Docker Compose overlays that can be layered onto the base deployment
 
 This variant does not include any deployment-specific hostnames, account data,
-Cloudflare credentials, proxy subscription secrets, or runtime logs.
+provider credentials, proxy subscription secrets, or runtime logs.
 
 ## Added Components
 
@@ -30,7 +30,7 @@ Cloudflare credentials, proxy subscription secrets, or runtime logs.
 Client
   -> private access gate
   -> grok2api
-     -> FlareSolverr
+     -> companion network helpers
      -> selected egress
 
 Egress choices:
@@ -38,9 +38,9 @@ Egress choices:
   http://mihomo:7890   -> Mihomo selected node
 ```
 
-Keep FlareSolverr and grok2api on the same egress path. Mixing clearance from
-one egress with API requests from another egress can cause session mismatch and
-unstable upstream behavior.
+Keep companion network helpers and grok2api on the same egress path. Mixing
+session-related traffic across different exits can make upstream behavior harder
+to reason about.
 
 ## Quick Start
 

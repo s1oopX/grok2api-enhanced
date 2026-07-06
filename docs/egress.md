@@ -31,7 +31,7 @@ Subscription nodes such as VLESS, Trojan, or Shadowsocks should be terminated by
 Mihomo first. grok2api then talks to Mihomo through one stable HTTP proxy URL.
 
 ```text
-grok2api / FlareSolverr
+grok2api and companion network helpers
   -> http://mihomo:7890
   -> selected Mihomo node
   -> upstream services
@@ -39,7 +39,7 @@ grok2api / FlareSolverr
 
 ## Operational Rules
 
-- Keep FlareSolverr and API requests on the same egress.
+- Keep companion network helpers and API requests on the same egress.
 - Use one fixed production node at a time.
 - Avoid automatic random rotation for account-bound traffic.
 - Switch nodes between batches, not during a running account refresh.
@@ -55,6 +55,6 @@ import requests
 p = {"http": "http://mihomo:7890", "https": "http://mihomo:7890"}
 for url in ["https://grok.com", "https://accounts.x.ai", "https://console.x.ai"]:
     r = requests.get(url, proxies=p, timeout=20, allow_redirects=True)
-    print(url, r.status_code, r.headers.get("cf-mitigated"))
+    print(url, r.status_code)
 PY
 ```
