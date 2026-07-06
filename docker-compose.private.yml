@@ -1,0 +1,15 @@
+services:
+  access-gate:
+    image: nginx:1.27-alpine
+    container_name: grok2api-access-gate
+    restart: unless-stopped
+    volumes:
+      - ./nginx-private.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      grok2api:
+        condition: service_healthy
+
+  cloudflared:
+    depends_on:
+      access-gate:
+        condition: service_started

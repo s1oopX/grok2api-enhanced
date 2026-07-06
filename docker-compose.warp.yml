@@ -1,0 +1,74 @@
+services:
+  # ── Init: 写入代理配置到 config.toml ──────────────────────────────────────
+  init-config:
+    image: python:3.13-alpine
+    volumes:
+      - ./data:/app/data
+      - ./scripts:/scripts:ro
+    command: ["python3", "/scripts/init_proxy_config.py"]
+    restart: "no"
+
+  # ── WARP: Cloudflare 出口代理 ─────────────────────────────────────────────
+  warp-proxy:
+    image: caomingjun/warp:latest
+    container_name: warp-proxy
+    restart: unless-stopped
+    environment:
+      - WARP_SLEEP=2
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+      - net.ipv4.conf.all.src_valid_mark=1
+
+  # ── Privoxy: HTTP 代理，转发到 WARP SOCKS5 ───────────────────────────────
+  privoxy:
+    image: ghcr.io/jiujiu532/privoxy-warp:latest
+    container_name: privoxy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:40080:8118"
+    depends_on:
+      - warp-proxy
+
+  # ── FlareSolverr: 自动解 Cloudflare 挑战 ────────────────────────────────
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    shm_size:  512m
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      LOG_LEVEL: info
+
+  # ── grok2api ──────────────────────────────────────────────────────────────
+  grok2api:
+    image: ghcr.io/jiujiu532/grok2api:latest
+    container_name: grok2api
+    restart: unless-stopped
+    ports:
+      - "${HOST_PORT:-8000}:${SERVER_PORT:-8000}"
+    environment:
+      TZ: Asia/Shanghai
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SERVER_HOST: ${SERVER_HOST:-0.0.0.0}
+      SERVER_PORT: ${SERVER_PORT:-8000}
+      SERVER_WORKERS: ${SERVER_WORKERS:-1}
+      ACCOUNT_STORAGE: ${ACCOUNT_STORAGE:-local}
+      ACCOUNT_LOCAL_PATH: ${ACCOUNT_LOCAL_PATH:-data/accounts.db}
+      ACCOUNT_REDIS_URL: ${ACCOUNT_REDIS_URL:-}
+      ACCOUNT_MYSQL_URL: ${ACCOUNT_MYSQL_URL:-}
+      ACCOUNT_POSTGRESQL_URL: ${ACCOUNT_POSTGRESQL_URL:-}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    depends_on:
+      init-config:
+        condition: service_completed_successfully
+      warp-proxy:
+        condition: service_started
+      privoxy:
+        condition: service_started
+      flaresolverr:
+        condition: service_started

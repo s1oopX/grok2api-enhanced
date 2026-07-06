@@ -1,0 +1,24 @@
+services:
+  grok2api:
+    volumes:
+      - ./overrides/admin/config.html:/app/app/statics/admin/config.html:ro
+
+  mihomo:
+    image: metacubex/mihomo:latest
+    container_name: grok2api-mihomo
+    restart: unless-stopped
+    command: ["-f", "/etc/mihomo/config.yaml"]
+    volumes:
+      # Copy mihomo/config.example.yaml to mihomo/config.yaml and fill in your own nodes.
+      - ./mihomo/config.yaml:/etc/mihomo/config.yaml:ro
+    expose:
+      - "7890"
+      - "9090"
+
+  access-gate:
+    volumes:
+      - ./nginx-private.conf:/etc/nginx/nginx.conf:ro
+      - ./mihomo-ui:/usr/share/nginx/html/mihomo:ro
+    depends_on:
+      mihomo:
+        condition: service_started

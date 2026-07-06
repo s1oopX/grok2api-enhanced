@@ -1,0 +1,11 @@
+services:
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-grok2api
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --loglevel info run --token-file /etc/cloudflared/token
+    volumes:
+      - ./cloudflared.token:/etc/cloudflared/token:ro
+    depends_on:
+      grok2api:
+        condition: service_healthy

@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Data
+data/
+app/data/
+*.db
+*.sqlite
+*.sqlite3
+
+# Deployment secrets / runtime-local files
+cloudflared.token
+*.token
+nginx-private.conf
+mihomo/config.yaml
+mihomo/*.yaml
+!mihomo/config.example.yaml
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Project specific
+.ace-tool/

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mihomo 出口</title>
+  <style>
+    :root { color-scheme: light dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    body { margin: 0; background: #0f172a; color: #e5e7eb; }
+    main { max-width: 980px; margin: 0 auto; padding: 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 18px; }
+    h1 { font-size: 22px; margin: 0; font-weight: 650; }
+    .status { display: flex; gap: 10px; align-items: center; color: #cbd5e1; font-size: 14px; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; display: inline-block; }
+    .dot.ok { background: #22c55e; }
+    .panel { border: 1px solid #334155; border-radius: 8px; overflow: hidden; background: #111827; }
+    .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #334155; }
+    .current { font-size: 14px; color: #cbd5e1; }
+    .current strong { color: #f8fafc; }
+    button { border: 1px solid #475569; background: #1f2937; color: #f8fafc; border-radius: 6px; padding: 8px 11px; font-size: 13px; cursor: pointer; }
+    button:hover { background: #273449; }
+    button.primary { border-color: #2563eb; background: #1d4ed8; }
+    button.primary:hover { background: #2563eb; }
+    button:disabled { opacity: .48; cursor: not-allowed; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th, td { padding: 12px 14px; border-bottom: 1px solid #243244; font-size: 14px; text-align: left; vertical-align: middle; }
+    th { color: #94a3b8; font-weight: 600; background: #0f172a; }
+    tr.active td { background: #13233b; }
+    .name { overflow-wrap: anywhere; color: #f8fafc; }
+    .muted { color: #94a3b8; }
+    .actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+    .right { text-align: right; }
+    .error { margin-top: 14px; color: #fecaca; background: #7f1d1d; border: 1px solid #991b1b; border-radius: 8px; padding: 10px 12px; display: none; }
+    @media (max-width: 720px) {
+      main { padding: 14px; }
+      header, .toolbar { align-items: stretch; flex-direction: column; }
+      table, thead, tbody, th, td, tr { display: block; }
+      thead { display: none; }
+      tr { border-bottom: 1px solid #334155; }
+      td { border-bottom: 0; padding: 9px 12px; }
+      td::before { content: attr(data-label); display: block; color: #94a3b8; font-size: 12px; margin-bottom: 3px; }
+      .right { text-align: left; }
+      .actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Mihomo 出口</h1>
+      <div class="status"><span id="dot" class="dot"></span><span id="status">读取中</span></div>
+    </header>
+    <section class="panel">
+      <div class="toolbar">
+        <div class="current">当前节点：<strong id="current">-</strong></div>
+        <button id="refresh">刷新</button>
+      </div>
+      <table>
+        <thead>
+          <tr><th>节点</th><th style="width:110px">延迟</th><th style="width:210px" class="right">操作</th></tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </section>
+    <div id="error" class="error"></div>
+  </main>
+  <script>
+    const GROUP = '节点选择';
+    const API = '/mihomo-api';
+    const delayUrl = 'https://www.gstatic.com/generate_204';
+    const rows = document.getElementById('rows');
+    const currentEl = document.getElementById('current');
+    const statusEl = document.getElementById('status');
+    const dot = document.getElementById('dot');
+    const errorEl = document.getElementById('error');
+    let group = null;
+
+    function showError(message) {
+      errorEl.textContent = message;
+      errorEl.style.display = message ? 'block' : 'none';
+    }
+    async function api(path, options = {}) {
+      const res = await fetch(API + path, {
+        ...options,
+        headers: {'Content-Type': 'application/json', ...(options.headers || {})}
+      });
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      if (res.status === 204) return null;
+      return res.json();
+    }
+    function render() {
+      const nodes = group?.all || [];
+      const now = group?.now || '-';
+      currentEl.textContent = now;
+      rows.innerHTML = '';
+      for (const name of nodes) {
+        const tr = document.createElement('tr');
+        if (name === now) tr.className = 'active';
+        tr.innerHTML = `
+          <td data-label="节点"><div class="name"></div></td>
+          <td data-label="延迟"><span class="muted" data-delay="${encodeURIComponent(name)}">-</span></td>
+          <td data-label="操作" class="right"><div class="actions">
+            <button data-test="${encodeURIComponent(name)}">测试</button>
+            <button class="primary" data-switch="${encodeURIComponent(name)}" ${name === now ? 'disabled' : ''}>切换</button>
+          </div></td>`;
+        tr.querySelector('.name').textContent = name;
+        rows.appendChild(tr);
+      }
+    }
+    async function load() {
+      showError('');
+      statusEl.textContent = '读取中';
+      dot.className = 'dot';
+      const data = await api('/proxies/' + encodeURIComponent(GROUP));
+      group = data;
+      statusEl.textContent = '已连接';
+      dot.className = 'dot ok';
+      render();
+    }
+    async function switchNode(name) {
+      showError('');
+      await api('/proxies/' + encodeURIComponent(GROUP), {
+        method: 'PUT',
+        body: JSON.stringify({name})
+      });
+      await load();
+    }
+    async function testDelay(name) {
+      const el = document.querySelector(`[data-delay="${CSS.escape(encodeURIComponent(name))}"]`);
+      if (el) el.textContent = '...';
+      try {
+        const data = await api('/proxies/' + encodeURIComponent(name) + '/delay?timeout=8000&url=' + encodeURIComponent(delayUrl));
+        if (el) el.textContent = `${data.delay} ms`;
+      } catch (err) {
+        if (el) el.textContent = '失败';
+      }
+    }
+    document.getElementById('refresh').addEventListener('click', () => load().catch(err => showError(err.message)));
+    rows.addEventListener('click', async (event) => {
+      const sw = event.target.closest('[data-switch]');
+      const test = event.target.closest('[data-test]');
+      try {
+        if (sw) await switchNode(decodeURIComponent(sw.dataset.switch));
+        if (test) await testDelay(decodeURIComponent(test.dataset.test));
+      } catch (err) {
+        showError(err.message);
+      }
+    });
+    load().catch(err => {
+      statusEl.textContent = '连接失败';
+      showError(err.message);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+external-controller: 0.0.0.0:9090
+secret: REPLACE_WITH_A_RANDOM_SECRET
+
+dns:
+  enable: false
+
+proxies:
+  - name: Example HTTP proxy
+    type: http
+    server: YOUR_PROXY_HOST
+    port: 8080
+    username: YOUR_PROXY_USER
+    password: YOUR_PROXY_PASSWORD
+
+  - name: Example SOCKS5 proxy
+    type: socks5
+    server: YOUR_PROXY_HOST
+    port: 1080
+    username: YOUR_PROXY_USER
+    password: YOUR_PROXY_PASSWORD
+
+proxy-groups:
+  - name: 节点选择
+    type: select
+    proxies:
+      - Example HTTP proxy
+      - Example SOCKS5 proxy
+
+rules:
+  - MATCH,节点选择
