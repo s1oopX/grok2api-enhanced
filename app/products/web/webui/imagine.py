@@ -17,12 +17,12 @@ from app.products.openai.images import resolve_aspect_ratio
 router = APIRouter()
 
 
-async def _acquire_token():
+async def _acquire_token(model_name: str = "grok-imagine-image"):
     from app.dataplane.account import _directory as _acct_dir
     if _acct_dir is None:
         return None, None
     from app.control.model.registry import get as get_model
-    spec = get_model("grok-imagine-image")
+    spec = get_model(model_name)
     if spec is None:
         return None, None
     acct = await _acct_dir.reserve(
@@ -33,6 +33,94 @@ async def _acquire_token():
     if acct is None:
         return None, None
     return acct.token, acct
+
+
+async def _run_lite_generation(
+    *,
+    send,
+    run_id: str,
+    prompt: str,
+    count: int,
+):
+    from app.control.model.registry import get as get_model
+    from app.platform.errors import UpstreamError
+    from app.products.openai.images import _run_lite_request
+
+    spec = get_model("grok-imagine-image-lite")
+    if spec is None:
+        await send({
+            "type": "error",
+            "message": "grok-imagine-image-lite is not available.",
+            "code": "model_not_available",
+            "run_id": run_id,
+        })
+        return
+
+    errors: list[str] = []
+    send_lock = asyncio.Lock()
+
+    async def _safe_send(payload: dict) -> bool:
+        async with send_lock:
+            return await send(payload)
+
+    async def _run_slot(index: int) -> bool:
+        image_id = f"{run_id}-{index}"
+
+        async def _progress(progress: int, *, image_id: str = image_id, index: int = index) -> None:
+            await _safe_send({
+                "type": "progress",
+                "image_id": image_id,
+                "order": index,
+                "progress": progress,
+                "run_id": run_id,
+            })
+
+        try:
+            image = await _run_lite_request(
+                spec=spec,
+                prompt=prompt,
+                timeout_s=get_config().get_float("chat.timeout", 120.0),
+                response_format="url",
+                progress_cb=_progress,
+            )
+        except Exception as exc:
+            message = str(exc) or type(exc).__name__
+            logger.warning(
+                "webui lite image slot failed: run_id={} order={} error_type={} error={}",
+                run_id,
+                index,
+                type(exc).__name__,
+                exc,
+            )
+            errors.append(message)
+            await _safe_send({
+                "type": "slot_error",
+                "image_id": image_id,
+                "order": index,
+                "message": message,
+                "code": "slot_failed",
+                "run_id": run_id,
+            })
+            return False
+
+        await _safe_send({
+            "type": "image",
+            "image_id": image_id,
+            "order": index,
+            "stage": "final",
+            "url": image.api_value,
+            "is_final": True,
+            "moderated": False,
+            "run_id": run_id,
+        })
+        return True
+
+    outcomes = await asyncio.gather(*(_run_slot(index) for index in range(count)))
+    completed = sum(1 for ok in outcomes if ok)
+
+    if completed == 0:
+        detail = errors[-1] if errors else "No images were generated."
+        raise UpstreamError(f"Lite image generation returned no images: {detail}")
 
 
 def _extract_token(value: str | None) -> str:
@@ -112,11 +200,28 @@ async def imagine_ws(websocket: WebSocket):
 
         acct = None
         try:
-            token, acct = await _acquire_token()
+            token, acct = await _acquire_token(
+                "grok-imagine-image-pro" if enable_pro else "grok-imagine-image"
+            )
             if not token:
+                if not enable_pro:
+                    await _run_lite_generation(
+                        send=_send,
+                        run_id=run_id,
+                        prompt=prompt,
+                        count=count,
+                    )
+                    if not stop_event.is_set():
+                        await _send({
+                            "type": "status",
+                            "status": "completed",
+                            "run_id": run_id,
+                            "count": count,
+                        })
+                    return
                 await _send({
                     "type": "error",
-                    "message": "No available accounts for this model tier",
+                    "message": "Quality mode requires super/heavy image accounts. Switch to Speed for the current basic pool.",
                     "code": "rate_limit_exceeded",
                 })
                 return

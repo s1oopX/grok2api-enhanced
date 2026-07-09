@@ -205,6 +205,8 @@
       url: '',
       progress: 0,
       moderated: false,
+      failed: false,
+      message: '',
       tile,
       body,
       link,
@@ -293,12 +295,14 @@
       finalized: false,
       readyCount: 0,
       filteredCount: 0,
+      failedCount: 0,
     };
   }
 
   function updateBatchMeta(batch) {
     const completed = batch.readyCount;
     const filtered = batch.filteredCount;
+    const failed = batch.failedCount;
     batch.count.textContent = `${completed}/${IMAGE_COUNT}`;
 
     if (!batch.finalized) {
@@ -314,6 +318,12 @@
     }
 
     if (completed > 0 || (completed === 0 && filtered > 0 && filtered < IMAGE_COUNT)) {
+      batch.state.dataset.state = 'partial';
+      batch.state.textContent = text('webui.masonry.statusPartialFailure', '部分失败');
+      return;
+    }
+
+    if (failed > 0 && failed < IMAGE_COUNT) {
       batch.state.dataset.state = 'partial';
       batch.state.textContent = text('webui.masonry.statusPartialFailure', '部分失败');
       return;
@@ -337,10 +347,11 @@
   }
 
   function renderSlot(slot) {
-    const nextState = slot.url ? 'ready' : (slot.moderated ? 'filtered' : 'pending');
+    const nextState = slot.url ? 'ready' : (slot.failed ? 'failed' : (slot.moderated ? 'filtered' : 'pending'));
     slot.tile.classList.toggle('is-pending', nextState === 'pending');
     slot.tile.classList.toggle('is-ready', nextState === 'ready');
     slot.tile.classList.toggle('is-filtered', nextState === 'filtered');
+    slot.tile.classList.toggle('is-failed', nextState === 'failed');
 
     if (nextState === 'ready') {
       if (slot.renderedUrl !== slot.url) {
@@ -361,6 +372,13 @@
       return;
     }
 
+    if (nextState === 'failed') {
+      slot.label.textContent = slot.message || text('webui.masonry.errors.requestFailed', '请求失败');
+      if (slot.renderedState !== nextState) slot.body.replaceChildren(slot.label);
+      slot.renderedState = nextState;
+      return;
+    }
+
     const progress = Math.max(0, Math.min(99, slot.progress || 0));
     if (slot.renderedProgress !== progress) {
       slot.progressValue.textContent = `${progress}%`;
@@ -373,6 +391,7 @@
 
   function slotOutcome(slot) {
     if (slot.url && !slot.moderated) return 'ready';
+    if (slot.failed) return 'failed';
     if (slot.moderated) return 'filtered';
     return 'pending';
   }
@@ -381,8 +400,10 @@
     if (previousOutcome === nextOutcome) return false;
     if (previousOutcome === 'ready') batch.readyCount = Math.max(0, batch.readyCount - 1);
     if (previousOutcome === 'filtered') batch.filteredCount = Math.max(0, batch.filteredCount - 1);
+    if (previousOutcome === 'failed') batch.failedCount = Math.max(0, batch.failedCount - 1);
     if (nextOutcome === 'ready') batch.readyCount += 1;
     if (nextOutcome === 'filtered') batch.filteredCount += 1;
+    if (nextOutcome === 'failed') batch.failedCount += 1;
     return true;
   }
 
@@ -394,15 +415,15 @@
     if (imageId) slot = batch.slots.find((item) => item.id === imageId) || null;
     if (!slot && Number.isInteger(order) && order >= 0 && order < batch.slots.length) {
       const orderedSlot = batch.slots[order] || null;
-      if (orderedSlot && !orderedSlot.url && !orderedSlot.moderated) {
+      if (orderedSlot && !orderedSlot.url && !orderedSlot.moderated && !orderedSlot.failed) {
         slot = orderedSlot;
       }
     }
     if (!slot) {
-      slot = batch.slots.find((item) => !item.url && !item.moderated) || null;
+      slot = batch.slots.find((item) => !item.url && !item.moderated && !item.failed) || null;
     }
     if (!slot) {
-      slot = batch.slots.find((item) => !item.id && !item.url && !item.moderated) || batch.slots[0];
+      slot = batch.slots.find((item) => !item.id && !item.url && !item.moderated && !item.failed) || batch.slots[0];
     }
     if (slot && imageId) slot.id = imageId;
     return slot;
@@ -419,10 +440,20 @@
       slot.progress = 100;
       slot.url = String(payload.url || '').trim();
       slot.moderated = false;
+      slot.failed = false;
+      slot.message = '';
     } else if (payload.type === 'moderated') {
       slot.progress = 100;
       slot.url = '';
       slot.moderated = true;
+      slot.failed = false;
+      slot.message = '';
+    } else if (payload.type === 'slot_error') {
+      slot.progress = 100;
+      slot.url = '';
+      slot.moderated = false;
+      slot.failed = true;
+      slot.message = String(payload.message || '').trim();
     }
 
     const nextOutcome = slotOutcome(slot);
@@ -518,7 +549,7 @@
 
       if (!batch) return;
 
-      if (payload.type === 'progress' || payload.type === 'image' || payload.type === 'moderated') {
+      if (payload.type === 'progress' || payload.type === 'image' || payload.type === 'moderated' || payload.type === 'slot_error') {
         syncBatch(batch, payload);
         setStatus(`${text('webui.masonry.statusGenerating', '生成中…')} ${batch.readyCount}/${IMAGE_COUNT} · ${formatRoundLabel(batch.round)}`, 'running');
         return;
