@@ -44,7 +44,7 @@ services:
 
   # ── grok2api ──────────────────────────────────────────────────────────────
   grok2api:
-    image: ghcr.io/jiujiu532/grok2api:latest
+    image: ghcr.io/s1oopx/grok2api-enhanced:latest
     container_name: grok2api
     restart: unless-stopped
     ports:
