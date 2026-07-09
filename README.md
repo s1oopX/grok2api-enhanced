@@ -60,7 +60,7 @@ docker compose \
 
 这套形态包含：
 
-- `grok2api`：核心 API/WebUI 服务。
+- `grok2api`：核心 API/WebUI 服务，默认使用 `ghcr.io/s1oopx/grok2api-enhanced:latest` 增强镜像。
 - `warp-proxy` 与 `privoxy`：提供稳定 WARP/Privoxy 出站路径。
 - `mihomo`：提供可切换节点出站路径。
 - `access-gate`：对公网入口做访问控制和反向代理。
