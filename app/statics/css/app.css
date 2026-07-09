@@ -812,6 +812,7 @@ button{cursor:pointer}
 }
 .webui-masonry-tile.is-ready .webui-masonry-tile-body{min-height:0;background:transparent}
 .webui-masonry-tile.is-filtered .webui-masonry-tile-body{background:#ede8df}
+.webui-masonry-tile.is-failed .webui-masonry-tile-body{background:#f0dfdc}
 .webui-masonry-tile-link{display:block}
 .webui-masonry-tile img{display:block;width:100%;height:auto;aspect-ratio:var(--tile-aspect, auto);object-fit:cover}
 .webui-masonry-tile-badge{
