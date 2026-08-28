@@ -7,10 +7,10 @@
 内置多节点出口调度与可视化看板，支持生图槽位级并发隔离、Lite 队列自适应降级与零泄露私有访问网关。
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](docker-compose.yml)
-[![API](https://img.shields.io/badge/API-OpenAI%20Compatible-00A67E?logo=openai&logoColor=white)](#客户端接入示例)
-[![Routing](https://img.shields.io/badge/Routing-Mihomo%20%7C%20WARP-8B5CF6)](#网络拓扑与出口调度)
+[![Python](https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://www.python.org/)
+[![Docker](https://img.shields.io/badge/Docker-Compose-2496ED.svg?logo=docker&logoColor=white)](docker-compose.yml)
+[![API](https://img.shields.io/badge/API-OpenAI%20Compatible-00A67E.svg?logo=openai&logoColor=white)](#客户端接入示例)
+[![Routing](https://img.shields.io/badge/Routing-Mihomo%20%7C%20WARP-8B5CF6.svg)](#网络拓扑与出口调度)
 
 [English](README.en.md) · [快速开始](#快速开始) · [关键决策](#关键决策) · [生产编排](#生产部署推荐)
 
@@ -40,19 +40,17 @@ docker compose -f docker-compose.yml -f docker-compose.mihomo.yml up -d
 针对大模型跨境网络抖动与 IP 风控限制，网关构建了多层分流与容错架构：
 
 ```mermaid
-%%{init: {'theme': 'neutral', 'themeVariables': { 'clusterBkg': '#ffffff', 'clusterBorder': '#d0d7de', 'primaryColor': '#f6f8fa', 'primaryBorderColor': '#d0d7de', 'lineColor': '#6e7681' }}}%%
+%%{init: {'theme': 'base', 'themeVariables': { 'edgeLabelBackground': '#ffffff', 'mainBkg': '#ffffff', 'lineColor': '#64748b' }}}%%
 flowchart LR
-    classDef client fill:#f6f8fa,stroke:#d0d7de,stroke-width:1.5px,color:#1f2328,rx:4px,ry:4px;
-    classDef gateway fill:#e6f4ff,stroke:#58a6ff,stroke-width:1.5px,color:#0969da,rx:4px,ry:4px;
-    classDef route fill:#fff9eb,stroke:#d4a72c,stroke-width:1.5px,color:#7d4e00,rx:4px,ry:4px;
-    classDef upstream fill:#f0f6fc,stroke:#30363d,stroke-width:1.5px,color:#24292e,rx:4px,ry:4px;
+    classDef client fill:#ffffff,stroke:#3b82f6,stroke-width:1.5px,color:#1e40af,rx:4px,ry:4px;
+    classDef gateway fill:#ffffff,stroke:#2563eb,stroke-width:1.5px,color:#1d4ed8,rx:4px,ry:4px;
+    classDef route fill:#ffffff,stroke:#f59e0b,stroke-width:1.5px,color:#b45309,rx:4px,ry:4px;
+    classDef upstream fill:#ffffff,stroke:#64748b,stroke-width:1.5px,color:#334155,rx:4px,ry:4px;
 
     C["客户端<br/>NextChat / Lobe / Code"]:::client -->|"/v1/chat /v1/images"| G["grok2api 核心网关<br/>(鉴权 / 槽位调度 / 降级)"]:::gateway
-    
     G -->|"直连策略"| R1["Direct 出口"]:::route
     G -->|"隧道隔离"| R2["WARP / Privoxy 隧道"]:::route
     G -->|"动态优选"| R3["Mihomo 多节点分流<br/>(可视化测速看板)"]:::route
-    
     R1 & R2 & R3 -->|"模型上游请求"| U["Grok Upstream API"]:::upstream
 ```
 
