@@ -41,17 +41,34 @@ docker compose -f docker-compose.yml -f docker-compose.mihomo.yml up -d
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': { 'edgeLabelBackground': '#ffffff', 'mainBkg': '#ffffff', 'lineColor': '#64748b' }}}%%
-flowchart LR
-    classDef client fill:#ffffff,stroke:#3b82f6,stroke-width:1.5px,color:#1e40af,rx:4px,ry:4px;
-    classDef gateway fill:#ffffff,stroke:#2563eb,stroke-width:1.5px,color:#1d4ed8,rx:4px,ry:4px;
-    classDef route fill:#ffffff,stroke:#f59e0b,stroke-width:1.5px,color:#b45309,rx:4px,ry:4px;
-    classDef upstream fill:#ffffff,stroke:#64748b,stroke-width:1.5px,color:#334155,rx:4px,ry:4px;
+flowchart TB
+    classDef client fill:#ffffff,stroke:#3b82f6,stroke-width:1.5px,color:#1e40af,rx:5px,ry:5px;
+    classDef gateway fill:#ffffff,stroke:#2563eb,stroke-width:1.5px,color:#1d4ed8,rx:5px,ry:5px;
+    classDef route fill:#ffffff,stroke:#f59e0b,stroke-width:1.5px,color:#b45309,rx:5px,ry:5px;
+    classDef upstream fill:#ffffff,stroke:#10b981,stroke-width:1.5px,color:#047857,rx:5px,ry:5px;
 
-    C["客户端<br/>NextChat / Lobe / Code"]:::client -->|"/v1/chat /v1/images"| G["grok2api 核心网关<br/>(鉴权 / 槽位调度 / 降级)"]:::gateway
-    G -->|"直连策略"| R1["Direct 出口"]:::route
-    G -->|"隧道隔离"| R2["WARP / Privoxy 隧道"]:::route
-    G -->|"动态优选"| R3["Mihomo 多节点分流<br/>(可视化测速看板)"]:::route
-    R1 & R2 & R3 -->|"模型上游请求"| U["Grok Upstream API"]:::upstream
+    %% 1. 客户端接入 (顶层)
+    C["多端客户端接入 (NextChat · LobeChat · Cherry Studio · Cursor / Code)"]:::client
+
+    %% 2. 核心网关引擎 (中层)
+    G["grok2api 核心网关<br/>(API Key 鉴权 · 槽位多账号调度 · 流式响应转换 · 故障降级)"]:::gateway
+
+    %% 3. 三路出海出口 (并排展开)
+    R1["策略一：Direct 直连出口<br/>原生网络低延迟直通"]:::route
+    R2["策略二：WARP / Privoxy 隧道<br/>IP 隔离与防风控转发"]:::route
+    R3["策略三：Mihomo 多节点分流<br/>自动测速 · 延迟优选看板"]:::route
+
+    %% 4. 上游模型服务 (底层收口)
+    U["Grok 官方上游模型群 (grok-2 · grok-2-mini · 图像生成)"]:::upstream
+
+    %% 纵向贯通流转 (大字号、舒展饱满)
+    C -->|"/v1/chat/completions · /v1/images/generations"| G
+
+    G -->|"直连规则"| R1
+    G -->|"代理隔离"| R2
+    G -->|"优选分流"| R3
+
+    R1 & R2 & R3 -->|"转发模型上游请求"| U
 ```
 
 ---
