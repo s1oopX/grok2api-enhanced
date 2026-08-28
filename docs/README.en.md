@@ -141,7 +141,7 @@ Run the checklist in `open-source-sanitization.md` before publishing.
 ## Upstream
 
 This repository is based on
-[jiujiu532/grok2api](https://github.com/jiujiu532/grok2api) and keeps the
+[s1oopX/grok2api-enhanced](https://github.com/s1oopX/grok2api-enhanced) and keeps the
 original license and attribution.
 
 New material in this repository is centered on deployment composition, egress

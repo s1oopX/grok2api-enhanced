@@ -24,7 +24,7 @@ services:
 
   # ── Privoxy: HTTP 代理，转发到 WARP SOCKS5 ───────────────────────────────
   privoxy:
-    image: ghcr.io/jiujiu532/privoxy-warp:latest
+    image: ghcr.io/s1oopx/privoxy-warp:latest
     container_name: privoxy
     restart: unless-stopped
     ports:

@@ -12,7 +12,7 @@ import aiohttp
 
 from app.platform.meta import get_project_version
 
-_RELEASES_URL = "https://api.github.com/repos/jiujiu532/grok2api/releases"
+_RELEASES_URL = "https://api.github.com/repos/s1oopX/grok2api-enhanced/releases"
 _CACHE_TTL_SECONDS = 86400.0
 _ERROR_TTL_SECONDS = 300.0
 _LOCK = asyncio.Lock()

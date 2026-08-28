@@ -194,7 +194,7 @@ Before publishing, run the checks in
 ## Attribution
 
 This repository is based on
-[jiujiu532/grok2api](https://github.com/jiujiu532/grok2api). The original
+[s1oopX/grok2api-enhanced](https://github.com/s1oopX/grok2api-enhanced). The original
 license and attribution are preserved. The added material in this variant is
 focused on deployment composition, egress management, private access templates,
 and publication-safe operational documentation.

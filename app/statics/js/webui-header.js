@@ -155,10 +155,10 @@ window.renderWebuiHeader = async function renderWebuiHeader() {
       <header class="admin-header webui-header-bar">
         <div class="admin-header-inner webui-header-inner">
           <div class="admin-brand-wrap">
-            <a href="https://github.com/chenyme/grok2api" target="_blank" rel="noopener" class="admin-brand-link">
+            <a href="https://github.com/s1oopX/grok2api-enhanced" target="_blank" rel="noopener" class="admin-brand-link">
               <span class="admin-brand">Grok2API</span>
             </a>
-            <a href="https://blog.cheny.me/" target="_blank" rel="noopener" class="admin-username" id="hd-user">@Chenyme</a>
+            <a href="https://s1oopx.bond" target="_blank" rel="noopener" class="admin-username" id="hd-user">@s1oopX</a>
           </div>
           <nav class="admin-nav">
             <a href="/webui/chat" class="admin-nav-link" data-nav="/webui/chat" data-i18n="webui.header.chat">聊天</a>
