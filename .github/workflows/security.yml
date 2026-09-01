@@ -16,7 +16,7 @@ jobs:
     name: Gitleaks Secret Scanner
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
           
@@ -40,7 +40,7 @@ jobs:
       # 针对 Push 和 Schedule：使用官方 Action
       - name: Run Gitleaks Action
         if: github.event_name != 'pull_request'
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: true
@@ -51,13 +51,13 @@ jobs:
     name: Python Dependency Audit
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        # setup-uv stopped publishing floating major tags after v7; pin exact.
+        uses: astral-sh/setup-uv@v10.0.1
       - name: Export requirements
         run: uv export --frozen --no-dev --format requirements-txt -o /tmp/req.txt
       - name: Run pip-audit
         run: |
-          uvx pip-audit -r /tmp/req.txt --progress-spinner off \
-            --ignore-vuln PYSEC-2026-161
+          uvx pip-audit -r /tmp/req.txt --progress-spinner off
           echo "Dependency audit passed"
